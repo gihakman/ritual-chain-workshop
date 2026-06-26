@@ -23,7 +23,7 @@ export function useBounty(bountyId?: bigint) {
   });
 
   const bounty: Bounty | undefined = query.data
-    ? parseBounty(query.data)
+    ? parseBounty(query.data as unknown as Bounty)
     : undefined;
 
   return {

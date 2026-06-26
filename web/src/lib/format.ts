@@ -13,22 +13,24 @@ export function formatReward(wei?: bigint, symbol = "RITUAL"): string {
   return `${formatEther(wei)} ${symbol}`;
 }
 
-/** Unix seconds -> local date string. */
-export function formatTimestamp(unixSeconds?: bigint | number): string {
-  if (unixSeconds === undefined) return "-";
-  const ms = Number(unixSeconds) * 1000;
-  if (!Number.isFinite(ms) || ms <= 0) return "-";
-  return new Date(ms).toLocaleString(undefined, {
+/**
+ * Millisecond timestamp -> local date string.
+ * NOTE: Ritual `block.timestamp` is in milliseconds, so deadlines are ms.
+ */
+export function formatTimestamp(ms?: bigint | number): string {
+  if (ms === undefined) return "-";
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return new Date(n).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-/** Compact "in 2h 5m" / "3m ago" style relative label. */
-export function formatRelative(unixSeconds?: bigint | number): string {
-  if (unixSeconds === undefined) return "";
-  const target = Number(unixSeconds) * 1000;
-  const diffMs = target - Date.now();
+/** Compact "in 2h 5m" / "3m ago" style relative label, from a ms timestamp. */
+export function formatRelative(ms?: bigint | number): string {
+  if (ms === undefined) return "";
+  const diffMs = Number(ms) - Date.now();
   const past = diffMs < 0;
   let s = Math.abs(Math.floor(diffMs / 1000));
   const d = Math.floor(s / 86400);

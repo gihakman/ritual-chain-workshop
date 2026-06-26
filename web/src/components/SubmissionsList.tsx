@@ -71,7 +71,8 @@ function SubmissionRow({
   });
 
   const submitter = data?.[0];
-  const answer = data?.[1];
+  const revealed = data?.[2] ?? false;
+  const answer = data?.[3];
 
   return (
     <div
@@ -91,6 +92,7 @@ function SubmissionRow({
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {!revealed ? <Badge tone="zinc">Hidden</Badge> : null}
           {ranking ? <Badge tone="zinc">score {ranking.score}</Badge> : null}
           {isWinner ? (
             <Badge tone="green">Winner</Badge>
@@ -101,7 +103,7 @@ function SubmissionRow({
       </div>
 
       <p className="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-200">
-        {answer ?? (isLoading ? "" : "-")}
+        {revealed ? answer || "-" : isLoading ? "" : "Hidden until reveal"}
       </p>
 
       {ranking?.reason ? (

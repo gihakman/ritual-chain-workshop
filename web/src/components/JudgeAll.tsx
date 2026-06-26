@@ -5,6 +5,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import aiJudgeAbi from "@/abi/AIJudge";
 import { contractAddress, executorAddress } from "@/config/contract";
 import { ritualChain } from "@/config/wagmi";
+import { useNow } from "@/hooks/useNow";
 import type { Bounty } from "@/lib/bounty";
 import { buildJudgeAllLlmInput, type JudgeSubmission } from "@/lib/ritualLlm";
 import { useWriteTx } from "@/hooks/useWriteTx";
@@ -27,18 +28,20 @@ export function JudgeAll({
 }) {
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: ritualChain.id });
+  const now = useNow();
   const [gathering, setGathering] = useState(false);
   const [gatherError, setGatherError] = useState<string | null>(null);
   const tx = useWriteTx(() => onJudged());
 
-  // Preflight the *connected* wallet's RitualWallet funding (not the bounty
-  // contract) — judgeAll spends prepaid+locked RITUAL via the LLM precompile.
+  // judgeAll spends the connected wallet's prepaid+locked RITUAL via the precompile.
   const walletStatus = useRitualWalletStatus(address);
 
-  const count = Number(bounty.submissionCount);
+  const total = Number(bounty.submissionCount);
+  const revealedCount = Number(bounty.revealedCount);
+  const revealOver = now >= Number(bounty.revealDeadline);
 
-  // Gate per spec: owner only, has submissions, not yet judged.
-  if (!isOwner || bounty.judged || bounty.finalized || count === 0) {
+  // Gate per spec: owner only, after the reveal deadline, has revealed answers, not yet judged.
+  if (!isOwner || bounty.judged || bounty.finalized || revealedCount === 0 || !revealOver) {
     return null;
   }
 
@@ -47,19 +50,19 @@ export function JudgeAll({
     setGatherError(null);
     setGathering(true);
     try {
-      // 1–2. Load every submission for this bounty.
+      // Gather ONLY revealed submissions — unrevealed ones are not eligible.
       const submissions: JudgeSubmission[] = [];
-      for (let i = 0; i < count; i++) {
-        const [submitter, answer] = await publicClient.readContract({
+      for (let i = 0; i < total; i++) {
+        const [submitter, , revealed, answer] = await publicClient.readContract({
           address: contractAddress,
           abi: aiJudgeAbi,
           functionName: "getSubmission",
           args: [bountyId, BigInt(i)],
         });
-        submissions.push({ index: i, submitter, answer });
+        if (revealed) submissions.push({ index: i, submitter, answer });
       }
 
-      // 3–4. Build the batch judging prompt and encode the Ritual LLM request.
+      // Build ONE batch judging prompt over the revealed answers.
       const llmInput = buildJudgeAllLlmInput({
         executorAddress,
         title: bounty.title,
@@ -69,7 +72,6 @@ export function JudgeAll({
 
       setGathering(false);
 
-      // 5. Submit it on-chain.
       await tx.run({
         address: contractAddress,
         abi: aiJudgeAbi,
@@ -93,8 +95,8 @@ export function JudgeAll({
   return (
     <Card>
       <CardHeader
-        title="Judge all submissions"
-        subtitle="Sends one Ritual LLM request ranking every submission."
+        title="Judge revealed submissions"
+        subtitle="One Ritual LLM request ranking every revealed answer (never one call per answer)."
       />
       <CardBody className="space-y-3">
         <Notice tone="indigo">AI review is advisory. The bounty owner finalizes the winner.</Notice>
@@ -104,14 +106,14 @@ export function JudgeAll({
         <Button onClick={handleJudge} disabled={busy || !fundingReady} className="w-full">
           {gathering ? (
             <>
-              <Spinner /> Gathering {count} submissions…
+              <Spinner /> Gathering {revealedCount} revealed answers…
             </>
           ) : tx.isBusy ? (
             "Judging…"
           ) : !fundingReady ? (
             "Fund RitualWallet to judge"
           ) : (
-            `Judge all (${count})`
+            `Judge revealed (${revealedCount})`
           )}
         </Button>
         {gatherError && <Notice tone="red">{gatherError}</Notice>}

@@ -16,7 +16,7 @@ export function BountyDetail({
   isOwner: boolean;
 }) {
   const now = useNow();
-  const status = getBountyStatus(bounty, now / 1000);
+  const status = getBountyStatus(bounty, now); // ms (Ritual block.timestamp is ms)
   const meta = STATUS_META[status];
 
   return (
@@ -25,9 +25,7 @@ export function BountyDetail({
         title={
           <span className="flex items-center gap-2">
             <span className="font-mono text-zinc-500">#{bountyId.toString()}</span>
-            <span className="normal-case text-base text-zinc-100">
-              {bounty.title || "Untitled"}
-            </span>
+            <span className="normal-case text-base text-zinc-100">{bounty.title || "Untitled"}</span>
           </span>
         }
         action={
@@ -40,26 +38,32 @@ export function BountyDetail({
       <CardBody className="space-y-4">
         <div>
           <div className="text-[11px] uppercase tracking-wide text-zinc-500">Rubric</div>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">
-            {bounty.rubric || "-"}
-          </p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{bounty.rubric || "-"}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2">
           <Stat label="Reward" value={formatReward(bounty.reward)} />
-          <Stat label="Submissions" value={bounty.submissionCount.toString()} />
+          <Stat label="Owner" value={shortenAddress(bounty.owner)} />
           <Stat
-            label="Deadline"
+            label="Submission deadline"
             value={
               <span>
-                {formatTimestamp(bounty.deadline)}
-                <span className="ml-1 text-xs text-zinc-500">
-                  ({formatRelative(bounty.deadline)})
-                </span>
+                {formatTimestamp(bounty.submissionDeadline)}
+                <span className="ml-1 text-xs text-zinc-500">({formatRelative(bounty.submissionDeadline)})</span>
               </span>
             }
           />
-          <Stat label="Owner" value={shortenAddress(bounty.owner)} />
+          <Stat
+            label="Reveal deadline"
+            value={
+              <span>
+                {formatTimestamp(bounty.revealDeadline)}
+                <span className="ml-1 text-xs text-zinc-500">({formatRelative(bounty.revealDeadline)})</span>
+              </span>
+            }
+          />
+          <Stat label="Commitments" value={bounty.submissionCount.toString()} />
+          <Stat label="Revealed" value={bounty.revealedCount.toString()} />
         </div>
 
         {bounty.finalized && (

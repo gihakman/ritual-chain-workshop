@@ -73,7 +73,11 @@ The tests mock the Ritual LLM precompile (`0x0802`) locally so the commit-reveal
 
 ## Frontend
 
-The `web/` Next.js app reads bounties via `getBounty`/`getSubmission`. Note the contract API changed for commit-reveal (two deadlines; `submitCommitment`/`revealAnswer` instead of `submitAnswer`; `getSubmission` now returns `commitment`+`revealed`+`answer`). The matching frontend updates are described in `SUBMISSION.md`.
+The `web/` Next.js app is **updated for the commit-reveal flow**: two deadlines in create, a commit→reveal submission UI (`CommitReveal`), submissions shown as *hidden until revealed*, judging restricted to revealed answers, and millisecond-based deadlines (Ritual). It's type-checked (`tsc --noEmit`, clean). Point it at the deployment via `NEXT_PUBLIC_CONTRACT_ADDRESS` (already pre-filled in `web/.env.example`):
+
+```bash
+cd web && pnpm install && pnpm dev
+```
 
 ## ⚠️ Time units on Ritual
 On Ritual, `block.timestamp` is expressed in **milliseconds**, so deadlines passed to `createBounty` (and the frontend) must be millisecond timestamps. The contracts only compare against `block.timestamp`, so they work on any chain as long as the client uses the same unit.

@@ -9,6 +9,23 @@ Two tracks are delivered and both are implemented + tested:
 | **Required** — Commit-Reveal | [`hardhat/contracts/AIJudge.sol`](hardhat/contracts/AIJudge.sol) | Participants post only a hash during submission; reveal answer+salt after the deadline. Works on any EVM chain. |
 | **Advanced** — Ritual-native TEE | [`hardhat/contracts/AIJudgeTEE.sol`](hardhat/contracts/AIJudgeTEE.sol) | Answers are encrypted to a Ritual TEE executor and never go public on the submission path; the enclave decrypts only during batch judging. |
 
+## 🟢 Live on Ritual testnet (chain 1979)
+
+Both contracts are deployed and a **real commit→reveal cycle was executed on-chain** (not mocked):
+
+| Contract | Address |
+|----------|---------|
+| `AIJudge` (commit-reveal) | [`0x3e1aC2CCb7F4A63cC88E396a6b1719D865dc2F7c`](https://explorer.ritualfoundation.org/address/0x3e1aC2CCb7F4A63cC88E396a6b1719D865dc2F7c) |
+| `AIJudgeTEE` (advanced) | [`0xBF337DEf0fb03B030Db196F480f9A90EC2ef9B68`](https://explorer.ritualfoundation.org/address/0xBF337DEf0fb03B030Db196F480f9A90EC2ef9B68) |
+
+Live commit-reveal proof — bounty #1 on `AIJudge`:
+- `createBounty` → `0xc12bab4367f5f367a96aa3009ebea8fdf8638198c4960244909cdeefbde688dc`
+- `submitCommitment` → `0xeba6be30017c70721ccd70874585ec6d7450deca18c1e00f5c147d1d1e5d374e` — on-chain answer was `""` (hidden)
+- `revealAnswer` → `0x21419485480859cbdba0a6f49895dcca39bba80a8ffe1fafef51b4606bd58c77` — answer revealed and verified on-chain
+
+Reproduce: `DEPLOYER_PRIVATE_KEY=0x… node hardhat/scripts/demo-commit-reveal.mjs`.
+Deploy yourself: `cd hardhat && forge create --rpc-url https://rpc.ritualfoundation.org --private-key 0x… contracts/AIJudge.sol:AIJudge --broadcast`.
+
 ## New bounty lifecycle (Required Track)
 
 ```
